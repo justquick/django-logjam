@@ -1,10 +1,12 @@
-from client import send_exception
-from util import format_exception
+from client import Client
 
 
 class LogJamMiddleware(object):
     def process_exception(self, request, exception):
-        send_exception(request)
+        try:
+            Client().send_exception(request)
+        except:
+            print 'asdf'
 
 """
 http_load -parallel 20 -seconds 30 urls

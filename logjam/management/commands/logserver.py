@@ -1,52 +1,68 @@
 from SocketServer import BaseRequestHandler, ThreadingMixIn, TCPServer
 from django.core.management.base import BaseCommand
-from django.core.cache import get_cache
 from logjam import settings
 from logjam.util import *
 from pprint import pprint
 from atexit import register
+from datetime import datetime
 import fcntl
 import os
 import sys
 
 
-cache = get_cache(settings.CACHE)
-ctrl = '%s%s' % (settings.PREFIX, 'ctrl')
-
 class ExceptionHandler(BaseRequestHandler):
-    def handle(self):
-        sha = self.request.recv(40)
-        if is_hex(sha):
-            key = '%s%s' % (settings.PREFIX, sha)
-            cached = cache.get(key)
-            if cached:
-                print 'Ignoring %s' % sha
-                self.request.send('\x00')
-            else:
-                print 'Saving %s' % sha
-                self.request.send('\x01')
-                content = ''
-                while 1:
-                    bit = self.request.recv(1024)
-                    if not bit: break
-                    content += bit 
-                cache.set(key, content)
-                cache.set(ctrl, cache.get(ctrl, ()) + (sha,))
-                log_report(deserialize(content))
-        elif sha.startswith('LIST'):
-            self.request.send('\n'.join(cache.get(ctrl, ())))
-        elif sha.startswith('GET'):
-            sha += self.request.recv(3)
-            sha = sha[3:]
-            print 'Getting %s' % sha
-            self.request.send(cache.get('%s%s' % (settings.PREFIX, sha), '(dp0\n.'))
-
-from OpenSSL import SSL
-import socket
+    def all(self):
+        return cache.get(ctrl, ())
+    
+    def dump(self):
+        pickle.dump(map(self.get, self.all()), open(datetime.now().strftime(settings.DUMP_FILE),'w'), -1)
+        
             
+    def get(self, sha):
+        return cache.get('%s%s' % (settings.PREFIX, sha), '(dp0\n.')
+        
+    def handle(self):
+        try:
+            data = self.request.recv(40)
+            if sha_re.match(data):
+                key = '%s%s' % (settings.PREFIX, data)
+                cached = cache.get(key)
+                if cached is None:
+                    print >>settings.LOG_FILE, 'Saving %s' % data
+                    self.request.send('\x01')
+                    content = ''
+                    while 1:
+                        bit = self.request.recv(1024)
+                        if not bit: break
+                        content += bit
+                    if not content:
+                        print >>settings.ERROR_FILE, 'No content to save'
+                        return
+                    cache.set(key, content, 36000)
+                    cache.set(ctrl, cache.get(ctrl, ()) + (data,), 36000)
+                    #log_report(deserialize(content))
+                else:
+                    print >>settings.LOG_FILE, 'Ignoring %s' % data
+                    self.request.send('\x00')
+            elif data.startswith('DUMP'):
+                self.dump()
+            elif data.startswith('LIST'):
+                self.request.send('\n'.join(self.all()))
+            elif data.startswith('GET'):
+                data += self.request.recv(3)
+                data = data[3:]
+                self.request.send(self.get(data))
+            elif data.startswith('DEL'):
+                data += self.request.recv(3)
+                data = data[3:]
+                cache.delete(data)
+        except Exception, e:
+            import traceback
+            print >>settings.ERROR_FILE, 'Server Error: %s' % traceback.format_exc()
+
 class LogJamServer(ThreadingMixIn, TCPServer):
     pass
-
+    #from OpenSSL import SSL
     #def __init__(self, server_address, HandlerClass):
     #    TCPServer.__init__(self, server_address, HandlerClass)
     #    ctx = SSL.Context(SSL.SSLv23_METHOD)
@@ -93,7 +109,7 @@ class Command(BaseCommand):
     
         null_descriptor = open(getattr(os, 'devnull', '/dev/null'), 'rw')
         if not settings.DEBUG:
-            for descriptor in (sys.stdin, sys.stdout, sys.stderr):
+            for descriptor in (sys.stdin, sys.stdout, settings.LOG_FILE):
                 descriptor.close()
                 descriptor = null_descriptor
     
@@ -111,5 +127,9 @@ class Command(BaseCommand):
         pidfile.write('%s' %(os.getpid()))
         pidfile.flush()
     
-        register(server.socket.close)
-        server.serve_forever()
+        #register(server.socket.close)
+        try:
+            server.serve_forever()
+        except:
+            #server.shutdown()
+            sys.exit(0)

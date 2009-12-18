@@ -18,10 +18,19 @@ class LogJamHandler(base.BaseHandler):
             from django.views import debug
             return debug.technical_500_response(request, *exc_info)
 
-        # Send exception to logjam server
-        from logjam.client import send_exception
-        send_exception(request, exc_info)
-       
+
+        from logjam.client import Client
+        Client().send_exception(request, exc_info)
+        
+        #from django.core.mail import mail_admins
+        #subject = 'Error (%s IP): %s' % ((request.META.get('REMOTE_ADDR') in settings.INTERNAL_IPS and 'internal' or 'EXTERNAL'), request.path)
+        #try:
+        #    request_repr = repr(request)
+        #except:
+        #    request_repr = "Request repr() unavailable"
+        #message = "%s\n\n%s" % (self._get_traceback(exc_info), request_repr)
+        #mail_admins(subject, message, fail_silently=True)
+
         # Return an HttpResponse that displays a friendly error message.
         callback, param_dict = resolver.resolve500()
         return callback(request, **param_dict)

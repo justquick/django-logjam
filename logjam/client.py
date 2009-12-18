@@ -15,15 +15,15 @@ class Client(object):
             self.socket.connect((host,  port))
         except Exception, e:
             if e.errno == 61:
-                print 'Failed to connect'
-            self.socket = None
-    
+                print >>sys.stderr, 'Failed to connect'
+            raise
+        
     def close(self):
         return self.socket.close()
     
     def all(self):
         for sha in self.run('LIST').splitlines():
-            yield sha
+            yield sha.rstrip()
             
     def get_first(self):
         for sha in self.all():
@@ -31,10 +31,13 @@ class Client(object):
             
     def get_all(self):
         for sha in self.all():
-            yield self.get(sha.strip())
+            yield self.get(sha)
             
     def get(self, sha):
         return deserialize(self.run('GET%s' % sha))
+        
+    def dump(self):
+        self.run('DUMP')
     
     def run(self, command):
         self.connect()
@@ -54,10 +57,18 @@ class Client(object):
         self.socket.send(sha)
         
         if self.socket.recv(1) == '\x00':
-            print 'Ignoring %s' % sha
+            print >>sys.stderr, 'Ignoring %s' % sha
             self.close()
             return
     
-        print 'Sending %s' % sha
-        self.socket.send(serialize(request2dict(request, exception, sha)))
+        print >>sys.stderr, 'Sending %s' % sha
+        try:
+            d = request2dict(request, exception, sha)
+        except Exception, e:
+            print >>sys.stderr, 'Conversion error: %s'%e
+
+        try:
+            self.socket.send(serialize(d))
+        except Exception, e:
+            print >>sys.stderr, 'Client error %s' % e
         self.close()

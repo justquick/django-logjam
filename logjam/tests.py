@@ -1,14 +1,16 @@
-import sys
-import datetime
+import sys,os
+from datetime import datetime
 from django.test import TestCase
 from django.http import HttpRequest
 from client import Client
 from mapreduce import WordCounter, Mailer
+import settings
+import pickle
 
 class MyReq(HttpRequest):
     def __init__(self):
         self.method = 'GET'
-        self.timestamp = datetime.datetime(2009, 12, 11, 14, 4, 59, 257218)
+        self.timestamp = datetime(2009, 12, 11, 14, 4, 59, 257218)
         self.path = '/'
         self.GET = {}
         self.POST = {}
@@ -76,6 +78,10 @@ class LogTest(TestCase):
         l = list(WordCounter().run())
         from operator import itemgetter
         self.assertEqual(l, sorted(l, key=itemgetter(1)))
+
+    def test_zdump(self):
+        self.client.dump()
+        print pickle.load(open(datetime.now().strftime(settings.DUMP_FILE)))
 
     def test_za(self):
         self.assert_('is_ajax' in self.client.get_first())

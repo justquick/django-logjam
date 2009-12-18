@@ -53,7 +53,6 @@ for bench in glob('*.txt'):
     d['min_first_response'] = a[5]
     
     rest = f.readlines()
-    d['bad_byte_counts'] = int(rest[0].split()[0])
     d['responses'] = int(rest[-1].strip().split()[-1])
     f.close()
 
@@ -67,7 +66,7 @@ def graph_factory(name, scale=(0,11000), symbol='f'):
     G = VerticalBarGroup([[x[1]] for x in values],encoding='text')
     G.title(lookup2[name],'black',20)
     G.scale(*scale)
-    G.size(460,300)
+    G.size(600,500)
     G.bar(50,10)
     G.legend(*[x[0] for x in values])
     G.color('red','224499','76A4FB','80C65A')
@@ -86,12 +85,12 @@ lookup2 = {
     'mean_first_response': 'Average Time Until Frist Response',
     'mean_per_conn': 'Average Time Until First Connection'
 }
-graph_factory('responses')
-graph_factory('bytes', (10**6, 10**7.2), 'e')
-graph_factory('fetches_per_sec', (0,200))
+graph_factory('responses', (0,60000))
+#graph_factory('bytes', (10**6, 10**7.2), 'e')
+graph_factory('fetches_per_sec', (0,900))
 #graph_factory('bad_byte_counts')
-graph_factory('mean_first_response',(0,200))
-graph_factory('mean_per_conn', (0,200))
+graph_factory('mean_first_response',(0,120))
+#graph_factory('mean_per_conn', (0.5, .1))
 
 """
 10224 fetches, 20 max parallel, 1.37046e+07 bytes, in 60 seconds

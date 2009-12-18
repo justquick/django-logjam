@@ -3,33 +3,36 @@ try:
 except ImportError:
     import pickle
 import sys
+import re
 import traceback
 from datetime import datetime
 from pprint import pformat
 from zlib import compress, decompress
-
+from django.core.cache import get_cache
 from django.utils.hashcompat import sha_constructor
 from django.template.defaultfilters import date, time
 from django.http import HttpRequest
-
 import settings
+
+
+cache = get_cache(settings.CACHE)
+sha_re = re.compile(r'[a-f0-9]{40}')
+ctrl = '%s%s' % (settings.PREFIX, 'ctrl')
+
 
 class AttrDict(HttpRequest,dict):
     def __getattr__(self, attr):
         if attr in self:
             return self[attr]
             
-def is_hex(s):
-    if not s:
-        return False
-    for c in s:
-        if c not in '0123456789abcdef':
-            return False
-    return True
 
 def request2dict(request, exception, sha):
-    obj_dict = dict([(k,{}) for k in ('REQUEST','GET','POST','FILES','COOKIES')])
-    obj_dict.update(request.__dict__.copy(),
+    obj_dict = dict(
+	GET = request.GET,
+	POST = request.POST,
+	FILES = request.FILES,
+	COOKIES = request.COOKIES,
+	META = request.META,
         id = sha,
         exception = exception,
         path = request.path,
@@ -40,8 +43,9 @@ def request2dict(request, exception, sha):
         encoding = request.encoding,
         timestamp = datetime.now(),
     )
-    if 'wsgi.input' in obj_dict['META']:
-        del obj_dict['META']['wsgi.errors'], obj_dict['META']['wsgi.input']
+    for key in ('wsgi.errors','wsgi.input','wsgi.file_wrapper'):
+	if key in obj_dict['META']:
+	    del obj_dict['META'][key]
     return obj_dict
 
 
@@ -53,8 +57,6 @@ def log_report(request):
         else:
             ctx[k] = v
     settings.LOG_FILE.write(settings.LOG_FORMAT % ctx)
- 	            #(pformat(request.GET), pformat(request.POST), pformat(request.COOKIES),
- 	            #pformat(request.META), request.exception))
     settings.LOG_FILE.flush()
 
 def deserialize(s):
@@ -70,7 +72,5 @@ def serialize(request):
 
 def format_exception(exc_info=None):
     exception = traceback.format_exception(*(exc_info or sys.exc_info()))
-    seed = exception
-    if settings.UNIQUE:
-        seed = seed[1:-1]
+    seed = settings.UNIQUE and exception[1:-1] or exception 
     return sha_constructor(''.join(seed)).hexdigest(), '\n'.join(exception)
