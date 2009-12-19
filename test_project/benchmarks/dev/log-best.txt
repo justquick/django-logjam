@@ -1,0 +1,8 @@
+9193 fetches, 20 max parallel, 1.22573e+07 bytes, in 60 seconds
+1333.33 mean bytes/connection
+153.217 fetches/sec, 204288 bytes/sec
+msecs/connect: 83.7515 mean, 7007.3 max, 0.041 min
+msecs/first-response: 36.2251 mean, 18918.6 max, 0.035 min
+419 bad byte counts
+HTTP response codes:
+  code 500 -- 8774
