@@ -1,10 +1,11 @@
 from SocketServer import BaseRequestHandler, ThreadingMixIn, TCPServer
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from logjam import settings
 from logjam.util import *
 from pprint import pprint
 from atexit import register
 from datetime import datetime
+from optparse import make_option
 import fcntl
 import os
 import sys
@@ -14,9 +15,8 @@ class ExceptionHandler(BaseRequestHandler):
     def all(self):
         return cache.get(ctrl, ())
     
-    def dump(self):
-        pickle.dump(map(self.get, self.all()), open(datetime.now().strftime(settings.DUMP_FILE),'w'), -1)
-        
+    def dump(self, file=settings.DUMP_FILE):
+        pickle.dump(map(self.get, self.all()), open(datetime.now().strftime(file), 'w'), -1)
             
     def get(self, sha):
         return cache.get('%s%s' % (settings.PREFIX, sha), '(dp0\n.')
@@ -77,8 +77,40 @@ class LogJamServer(ThreadingMixIn, TCPServer):
     #    self.server_activate()
 
 class Command(BaseCommand):
-    def handle(self, *args, **options):
-        server = LogJamServer((settings.HOST, settings.PORT), ExceptionHandler)
+    option_list = BaseCommand.option_list + (
+        make_option('-p', '--pidfile', dest='pidfile',default=settings.PIDFILE,
+            help='File to write daemon\'s process id'),
+        make_option('-d', '--daemonize', action='store_true', dest='daemonize', default=settings.DAEMONIZE,
+            help='Forks a unix daemon, writing pid file'),
+        make_option('-k', '--kill', action='store_true', dest='kill', default=False,
+            help='Kills an already running daemon using pidfile'),
+    )
+    help = 'Runs the logjam TCP service.'
+    args = '[optional port number, or ipaddr:port]'
+    
+    def handle(self, addrport='', *args, **options):
+        pidfile = options.get('pidfile',settings.PIDFILE)
+        
+        if options.get('kill',False):
+            os.system('kill -9 `cat %r`' % str(pidfile))
+            os.system('rm -f %r' % str(pidfile))
+            return
+            
+        if not addrport:
+            addr = settings.HOST
+            port = settings.PORT
+        else:
+            try:
+                addr, port = addrport.split(':')
+            except ValueError:
+                addr, port = settings.HOST, addrport
+        
+        try:
+            port = int(port)
+        except TypeError:
+            raise CommandError("%r is not a valid port number." % port)        
+        
+        server = LogJamServer((addr, port), ExceptionHandler)
 
         logger = None
         std_pipes_to_logger = True
@@ -86,7 +118,7 @@ class Command(BaseCommand):
         # http://www.enderunix.org/documents/eng/daemon.php
         # as a reference for this section.
     
-        if settings.DAEMONIZE:
+        if options.get('daemonize', settings.DAEMONIZE):
             # Fork, creating a new process for the child.
             process_id = os.fork()
             if process_id < 0:
@@ -107,26 +139,28 @@ class Command(BaseCommand):
                 # Uh oh, there was a problem.
                 sys.exit(1)
     
-        null_descriptor = open(getattr(os, 'devnull', '/dev/null'), 'rw')
-        if not settings.DEBUG:
-            for descriptor in (sys.stdin, sys.stdout, settings.LOG_FILE):
-                descriptor.close()
-                descriptor = null_descriptor
+            null_descriptor = open(getattr(os, 'devnull', '/dev/null'), 'rw')
+            if not settings.DEBUG:
+                for descriptor in (sys.stdin, sys.stdout, settings.LOG_FILE):
+                    descriptor.close()
+                    descriptor = null_descriptor
+        
+            # Set umask to default to safe file permissions when running
+            # as a root daemon. 027 is an octal number.
+            os.umask(027)
+        
+            pidfile = open(options.get('pidfile', settings.PIDFILE), 'w')
+            # Try to get an exclusive lock on the file.  This will fail
+            # if another process has the file locked.
+            #fcntl.lockf(pidfile, fcntl.LOCK_EX|fcntl.LOCK_NB)
+        
+            # Record the process id to the pidfile.  This is standard
+            # practice for daemons.
+            pidfile.write('%s' %(os.getpid()))
+            pidfile.flush()
     
-        # Set umask to default to safe file permissions when running
-        # as a root daemon. 027 is an octal number.
-        os.umask(027)
-    
-        pidfile = open(settings.PIDFILE, 'w')
-        # Try to get an exclusive lock on the file.  This will fail
-        # if another process has the file locked.
-        #fcntl.lockf(pidfile, fcntl.LOCK_EX|fcntl.LOCK_NB)
-    
-        # Record the process id to the pidfile.  This is standard
-        # practice for daemons.
-        pidfile.write('%s' %(os.getpid()))
-        pidfile.flush()
-    
+        print >>settings.LOG_FILE, 'Development server is running at %s:%s' % (addr, port) 
+        
         #register(server.socket.close)
         try:
             server.serve_forever()

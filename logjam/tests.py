@@ -6,47 +6,35 @@ from client import Client
 from mapreduce import WordCounter, Mailer
 import settings
 import pickle
+from util import *
+
 
 class MyReq(HttpRequest):
     def __init__(self):
         self.method = 'GET'
-        self.timestamp = datetime(2009, 12, 11, 14, 4, 59, 257218)
+        #self.timestamp =    datetime(2009, 12, 11, 14, 4, 59, 257218)
         self.path = '/'
         self.GET = {}
         self.POST = {}
         self.COOKIES = {}
+        self.FILES = {}
         self.META = {'DOCUMENT_ROOT': '/var/www/',
 'GATEWAY_INTERFACE': 'CGI/1.1',
 'HTTP_ACCEPT': '*/*',
 'HTTP_ACCEPT_ENCODING': 'gzip, deflate',
 'HTTP_ACCEPT_LANGUAGE': 'en-us',
-'HTTP_COOKIE': '__qca=1170638018-7141480-61440722; __utma=119759246.1800635973.1174575396.1253731181.1254105505.86; __utmb=119759246.195.7.1254153099013; __utmc=119759246; __utmz=119759246.1254105506.86.70.utmcsr=drudgereport.com|utmccn=(referral)|utmcmd=referral|utmcct=/; AxData=; Axxd=1; s_sess=%20s_cc%3Dtrue%3B%20s_sq%3D%3B; s_vi=[CS]v1|485132E3000029AF-A000B4500001DC6[CE]; _csuid=4601392b11053074; SVWCUK200=130970_33/130968_25/130974_67; TheWashingtonTimes=71.112.92.213.273561158677753748; VWCUK200=L092809/Q32531_6359_5_092809_37_093009_130970x128779x092809x24x37/Q32532_6359_5_092709_80_093009_130974x128785x092809x52x80/Q32533_6359_5_092709_30_093009_130968x128786x092809x20x30',
-'HTTP_HOST': 'www.washingtontimes.com',
-'HTTP_REFERER': 'http://www.washingtontimes.com/news/2009/sep/28/liberals-seek-health-care-access-for-illegals/',
 'HTTP_USER_AGENT': 'Mozilla/5.0 (Macintosh; U; PPC Mac OS X 10_5_8; en-us) AppleWebKit/531.9 (KHTML, like Gecko) Version/4.0.3 Safari/531.9',
-'HTTP_X_FORWARDED_FOR': '173.64.164.220, 172.16.12.4',
-'HTTP_X_VARNISH': '30673177',
-'PATH': '/usr/local/bin:/usr/bin:/bin',
-'PATH_INFO': u'/news/2009/sep/28/liberals-seek-health-care-access-for-illegals/\x7f/',
-'PATH_TRANSLATED': '/var/code/washingtontimes/django.wsgi/news/2009/sep/28/liberals-seek-health-care-access-for-illegals/\x7f/',
 'QUERY_STRING': '',
-'REMOTE_ADDR': '173.64.164.220',
+'REMOTE_ADDR': '666.666.666.666',
 'REMOTE_PORT': '40474',
 'REQUEST_METHOD': 'GET',
-'REQUEST_URI': '/news/2009/sep/28/liberals-seek-health-care-access-for-illegals/%7F/',
-'SCRIPT_FILENAME': '/var/code/washingtontimes/django.wsgi',
 'SCRIPT_NAME': u'',
-'SCRIPT_URI': 'http://www.washingtontimes.com/news/2009/sep/28/liberals-seek-health-care-access-for-illegals/\x7f/',
-'SCRIPT_URL': '/news/2009/sep/28/liberals-seek-health-care-access-for-illegals/\x7f/',
-'SERVER_ADDR': '172.16.12.48',
-'SERVER_ADMIN': 'webmaster@washingtontimes.com',
-'SERVER_NAME': 'www.washingtontimes.com',
+'SERVER_ADDR': '127.0.0.1',
+'SERVER_ADMIN': 'webmaster@.com',
+'SERVER_NAME': 'www.com',
 'SERVER_PORT': '80',
 'SERVER_PROTOCOL': 'HTTP/1.1',
-'SERVER_SIGNATURE': '<address>Apache/2 Server at www.washingtontimes.com Port 80</address>\n',
 'SERVER_SOFTWARE': 'Apache/2',
-'mod_wsgi.application_group': 'margaret9.washingtontimes.com|',
-'mod_wsgi.callable_object': 'application',
 'mod_wsgi.listener_host': '',
 'mod_wsgi.listener_port': '80',
 'mod_wsgi.process_group': '',
@@ -81,7 +69,7 @@ class LogTest(TestCase):
 
     def test_zdump(self):
         self.client.dump()
-        print pickle.load(open(datetime.now().strftime(settings.DUMP_FILE)))
+        self.assertEqual(len(pickle.load(open(datetime.now().strftime(settings.DUMP_FILE)))), 32)
 
     def test_za(self):
         self.assert_('is_ajax' in self.client.get_first())
@@ -105,7 +93,6 @@ class LogTest(TestCase):
             if attr.startswith('raise_'):
                 self.send_exception(getattr(self, attr))
                 
-
     def raise_baseexception(self):
         raise BaseException
 

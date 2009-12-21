@@ -17,7 +17,8 @@ import settings
 
 cache = get_cache(settings.CACHE)
 sha_re = re.compile(r'[a-f0-9]{40}')
-ctrl = '%s%s' % (settings.PREFIX, 'ctrl')
+prefix = lambda k: '%s%s' % (settings.PREFIX, 'ctrl')
+ctrl = prefix('ctrl')
 
 
 class AttrDict(HttpRequest,dict):
