@@ -19,8 +19,11 @@ class LogJamHandler(base.BaseHandler):
             return debug.technical_500_response(request, *exc_info)
 
 
-        from logjam.client import Client
-        Client().send_exception(request, exc_info)
+        from logjam.client import Client, ConnectionError
+        try:
+            Client().send_exception(request, exc_info)
+        except ConnectionError:
+            pass
         
         #from django.core.mail import mail_admins
         #subject = 'Error (%s IP): %s' % ((request.META.get('REMOTE_ADDR') in settings.INTERNAL_IPS and 'internal' or 'EXTERNAL'), request.path)

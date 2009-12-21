@@ -3,8 +3,10 @@ import socket
 from django.core.handlers.wsgi import WSGIHandler
 from django.utils.hashcompat import sha_constructor
 import settings
-from util import serialize, deserialize, format_exception, request2dict
+from util import *
 
+class ConnectionError(Exception):
+    pass
 
 class Client(object):
         
@@ -15,8 +17,8 @@ class Client(object):
             self.socket.connect((host,  port))
         except Exception, e:
             if e.errno == 61:
-                print >>sys.stderr, 'Failed to connect'
-            raise
+                print >>settings.ERROR_FILE, 'Failed to connect'
+            raise ConnectionError
         
     def close(self):
         return self.socket.close()
@@ -57,18 +59,18 @@ class Client(object):
         self.socket.send(sha)
         
         if self.socket.recv(1) == '\x00':
-            print >>sys.stderr, 'Ignoring %s' % sha
+            print >>settings.LOG_FILE, 'Ignoring %s' % sha
             self.close()
             return
     
-        print >>sys.stderr, 'Sending %s' % sha
+        print >>settings.LOG_FILE, 'Sending %s' % sha
         try:
             d = request2dict(request, exception, sha)
         except Exception, e:
-            print >>sys.stderr, 'Conversion error: %s'%e
+            print >>settings.ERROR_FILE, 'Conversion error: %s'%e
 
         try:
             self.socket.send(serialize(d))
         except Exception, e:
-            print >>sys.stderr, 'Client error %s' % e
+            print >>settings.ERROR_FILE, 'Client error %s' % e
         self.close()

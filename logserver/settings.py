@@ -23,7 +23,7 @@ DATABASE_PORT = ''             # Set to empty string for default. Not used with 
 # although not all choices may be available on all operating systems.
 # If running in a Windows environment this must be set to the same as your
 # system time zone.
-TIME_ZONE = 'America/Chicago'
+TIME_ZONE = 'America/Eastern'
 
 # Language code for this installation. All choices can be found here:
 # http://www.i18nguy.com/unicode/language-identifiers.html
@@ -33,7 +33,7 @@ SITE_ID = 1
 
 # If you set this to False, Django will make some optimizations so as not
 # to load the internationalization machinery.
-USE_I18N = True
+USE_I18N = False
 
 # Absolute path to the directory that holds media.
 # Example: "/home/media/media.lawrence.com/"
@@ -69,10 +69,7 @@ MIDDLEWARE_CLASSES = (
 ROOT_URLCONF = 'urls'
 
 TEMPLATE_DIRS = (
-    os.path.join(os.path.dirname(__file__),'templates'),
-    # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
-    # Always use forward slashes, even on Windows.
-    # Don't forget to use absolute paths, not relative paths.
+    os.path.join(ROOT,'templates'),
 )
 
 INSTALLED_APPS = (
@@ -83,16 +80,8 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'logjam',
     'native_tags',
-    'django_extensions',
+    'piston',
 )
-
-
-CACHE_BACKEND = LOGJAM_CACHE_BACKEND = 'locmem:///'
-LOGJAM_UNIQUE = True
-LOGJAM_PORT = 8009
-LOGJAM_DAEMONIZE = False
-DEBUG = TEMPLATE_DEBUG = 1
-DEBUG_PROPAGATE_EXCEPTIONS = False
 
 NATIVE_TAGS = (
     'native_tags.contrib.pygmentize',
@@ -102,3 +91,11 @@ NATIVE_LIBRARY = {
         'last_line': lambda s: filter(None, s.splitlines())[-1]
     }
 }
+
+CACHE_BACKEND = 'file://%s' % os.path.join(ROOT, 'cache')
+
+
+try:
+    from log_settings import *
+except:
+    pass
