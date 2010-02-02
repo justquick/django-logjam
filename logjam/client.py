@@ -16,8 +16,7 @@ class Client(object):
         try:
             self.socket.connect((host,  port))
         except Exception, e:
-            if e.errno == 61:
-                print >>settings.ERROR_FILE, 'Failed to connect'
+            print >>settings.ERROR_FILE, 'Failed to connect'
             raise ConnectionError
         
     def close(self):

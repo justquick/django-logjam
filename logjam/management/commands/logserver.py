@@ -25,7 +25,7 @@ class ExceptionHandler(BaseRequestHandler):
         try:
             data = self.request.recv(40)
             if sha_re.match(data):
-                key = '%s%s' % (settings.PREFIX, data)
+                key = prefix(data)
                 cached = cache.get(key)
                 if cached is None:
                     print >>settings.LOG_FILE, 'Saving %s' % data

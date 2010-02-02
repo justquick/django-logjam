@@ -1,16 +1,17 @@
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.http import HttpResponse
-from django.core.cache import cache
 from client import Client
 from datetime import datetime
 from time import strptime
-from util import prefix, cache as appcache
+from util import prefix, cache
 import settings
 import os
 
-parse_date = lambda s: datetime(*strptime(s, '%m/%d/%Y')[:3])
+from models import HttpException
 
+
+parse_date = lambda s: datetime(*strptime(s, '%m/%d/%Y')[:3])
 
 def admin(request):
     f = request.REQUEST.get('from', '')
@@ -28,6 +29,21 @@ def admin(request):
     },context_instance=RequestContext(request))
 
 def archive(request, sha):
-    cache.set(prefix(sha), Client().get(sha))
-    appcache.delete(prefix(sha))
-    return HttpResponse()
+    obj = Client().get(sha)
+    HttpException.objects.create(
+ 	GET = repr(obj['GET']),
+	POST = repr(obj['POST']),
+	FILES = repr(obj['FILES']),
+	COOKIES = repr(obj['COOKIES']),
+	META = repr(obj['META']),
+        sha = sha,
+        exception = obj['exception'],
+        path = obj['path'],
+        method = obj['method'],
+        host = obj['host'],
+        is_ajax = obj['is_ajax'],
+        is_secure = obj['is_secure'],
+        encoding = obj['encoding'] or 'utf8',
+        timestamp = obj['timestamp'])
+    cache.delete(prefix(sha))
+    return HttpResponse('The exception has been archived in database')

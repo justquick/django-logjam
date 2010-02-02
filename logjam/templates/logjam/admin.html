@@ -7,11 +7,18 @@
 {% endblock %}
 
 {% block extrahead %}
-<link type="text/css" href="{{ MEDIA_URL }}css/custom-theme/jquery-ui-1.7.2.custom.css" rel="stylesheet" />	
-<script type="text/javascript" src="{{ MEDIA_URL }}js/jquery-1.3.2.min.js"></script>
-<script type="text/javascript" src="{{ MEDIA_URL }}js/jquery-ui-1.7.2.custom.min.js"></script>
+<link type="text/css" href="http://static.jquery.com/ui/themes/base/ui.base.css" rel="stylesheet" /> 
+<link type="text/css" href="http://jqueryui.com/themeroller/css/parseTheme.css.php?ffDefault=Lucida+Grande%2C+Lucida+Sans%2C+Arial%2C+sans-serif&fwDefault=bold&fsDefault=1.1em&cornerRadius=6px&bgColorHeader=deedf7&bgTextureHeader=03_highlight_soft.png&bgImgOpacityHeader=100&borderColorHeader=aed0ea&fcHeader=222222&iconColorHeader=72a7cf&bgColorContent=f2f5f7&bgTextureContent=04_highlight_hard.png&bgImgOpacityContent=100&borderColorContent=dddddd&fcContent=362b36&iconColorContent=72a7cf&bgColorDefault=d7ebf9&bgTextureDefault=02_glass.png&bgImgOpacityDefault=80&borderColorDefault=aed0ea&fcDefault=2779aa&iconColorDefault=3d80b3&bgColorHover=e4f1fb&bgTextureHover=02_glass.png&bgImgOpacityHover=100&borderColorHover=74b2e2&fcHover=0070a3&iconColorHover=2694e8&bgColorActive=3baae3&bgTextureActive=02_glass.png&bgImgOpacityActive=50&borderColorActive=2694e8&fcActive=ffffff&iconColorActive=ffffff&bgColorHighlight=ffef8f&bgTextureHighlight=03_highlight_soft.png&bgImgOpacityHighlight=25&borderColorHighlight=f9dd34&fcHighlight=363636&iconColorHighlight=2e83ff&bgColorError=cd0a0a&bgTextureError=01_flat.png&bgImgOpacityError=15&borderColorError=cd0a0a&fcError=ffffff&iconColorError=ffffff&bgColorOverlay=eeeeee&bgTextureOverlay=08_diagonals_thick.png&bgImgOpacityOverlay=90&opacityOverlay=80&bgColorShadow=000000&bgTextureShadow=04_highlight_hard.png&bgImgOpacityShadow=70&opacityShadow=30&thicknessShadow=7px&offsetTopShadow=-7px&offsetLeftShadow=-7px&cornerRadiusShadow=8px" rel="stylesheet" />	
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js"></script> 
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.2/jquery-ui.min.js"></script> 
 <script type="text/javascript">
 	$(function() {
+		$(".fg-button-toggleable").click(function(){
+			$('#'+this.id).load(window.location+this.id);
+			$('#div-'+this.id).remove();
+			$('#h3-'+this.id).remove();
+			
+		});
 		$("#accordion").accordion();
                 $(".tabs").tabs();
                 $("#from").datepicker();
@@ -52,9 +59,9 @@
 
 <div id="accordion">
 {% for e in errors %}
-    <h3><a href="#">{{ e.method }} {{ e.path }} - {% last_line e.exception %}</a></h3>
-    <div class="tabs" style="height: 300px; overflow: auto;">
-	<!--<button class="fg-button ui-state-default fg-button-toggleable ui-corner-all">Toggle</button>-->
+    <h3 id="h3-{{ e.id }}"><a href="#">{{ e.method }} {{ e.path }} - {% last_line e.exception %}</a></h3>
+    <div id="div-{{ e.id }}" class="tabs" style="height: 300px; overflow: auto;">
+	<button id="{{ e.id }}" class="fg-button ui-state-default fg-button-toggleable ui-corner-all"><span class="ui-icon ui-icon-circle-close"/></button>
 	<ul>
             <li><a href="#err{{ forloop.counter }}-info">Info</a></li>
             <li><a href="#err{{ forloop.counter }}-exc">Exception</a></li>

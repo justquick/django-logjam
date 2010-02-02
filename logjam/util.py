@@ -13,11 +13,12 @@ from django.utils.hashcompat import sha_constructor
 from django.template.defaultfilters import date, time
 from django.http import HttpRequest
 import settings
+from models import HttpException
 
 
 cache = get_cache(settings.CACHE)
 sha_re = re.compile(r'[a-f0-9]{40}')
-prefix = lambda k: '%s%s' % (settings.PREFIX, 'ctrl')
+prefix = lambda k: '%s%s' % (settings.PREFIX, k)
 ctrl = prefix('ctrl')
 
 
@@ -26,6 +27,7 @@ class AttrDict(HttpRequest,dict):
         if attr in self:
             return self[attr]
             
+
 
 def request2dict(request, exception, sha):
     obj_dict = dict(
